@@ -6,18 +6,27 @@
 import logging
 import bus
 
-class i2cgeneric(object):
+class I2CDevice(object):
     def __init__(self, config):
-        self.name = config.get_name().split()[1]
         self.printer = config.get_printer()
+        self.name = config.get_name().split()[1]
+        self.reactor = self.printer.get_reactor()
         self.gcode = self.printer.lookup_object('gcode')
         self.event_gcode = self.insert_gcode = None
+        self.i2c = bus.MCU_I2C_from_config(config)
+        i2c_addr = self.i2c.get_i2c_address()
+        self.buttons = self.printer.try_load_module(config, 'buttons')
         gcode_macro = self.printer.try_load_module(config, 'gcode_macro')
+
+        
+        
         if config.get('event_gcode', None) is not None:
             self.insert_gcode = gcode_macro.load_template(
                 config, 'event_gcode')
-        self.i2c = bus.MCU_I2C_from_config(config)
-        i2c_addr = self.i2c.get_i2c_address()
+                
+
+        
+        
     def _attention_event_handler(self, eventtime):
         if self.event_running:
             return
@@ -38,11 +47,9 @@ class i2cgeneric(object):
         raise NotImplementedError(
             "Sensor must implement cmd_I2C_SET")
 
-class I2CDevice(i2cgeneric):
-    def __init__(self, config):
-        super(I2CDevice, self).__init__(config)
-        self.reactor = self.printer.get_reactor()
-        self.buttons = self.printer.try_load_module(config, 'buttons')
+
+
+
         attention_pin = config.get('attention_pin')
         self.buttons.register_buttons([attention_pin], self._button_handler)
         self.start_time = self.reactor.NEVER
