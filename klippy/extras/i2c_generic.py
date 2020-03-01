@@ -1,8 +1,15 @@
-# MCP4451 digipot code
+#
+# # MCP4451 digipot code
 #
 # Copyright (C) 2018  Kevin O'Connor <kevin@koconnor.net>
 #
 # This file may be distributed under the terms of the GNU GPLv3 license.
+#####################################
+######################################
+########################################
+######################################
+
+
 import logging
 import bus
 
@@ -38,6 +45,8 @@ class I2CDevice(object):
             self.gcode.run_script(template.render() + "\nM400")
         except Exception:
             logging.exception("Script running error")
+
+
     cmd_QUERY_ATTENTION_PIN_help = "Query the status of the i2c Attention Pin"
     def cmd_QUERY_ATTENTION_PIN(self, params):
         raise NotImplementedError(
@@ -90,6 +99,8 @@ class I2CDevice(object):
         value = self.gcode.get('V')
         # Send command
         self.set_register(register, value)
+
+    # From mcp4451.py
     def set_register(self, reg, value):
         self.i2c.i2c_write([(reg << 4) | ((value >> 8) & 0x03), value])
 
