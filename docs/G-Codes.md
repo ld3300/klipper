@@ -16,7 +16,8 @@ Klipper supports the following standard G-Code commands:
 - Set extrude factor override percentage: `M221 S<percent>`
 - Set acceleration: `M204 S<value>` OR `M204 P<value> T<value>`
   - Note: If S is not specified and both P and T are specified, then
-    the acceleration is set to the minimum of P and T.
+    the acceleration is set to the minimum of P and T. If only one of
+    P or T is specified, the command has no effect.
 - Get extruder temperature: `M105`
 - Set extruder temperature: `M104 [T<index>] [S<temperature>]`
 - Set extruder temperature and wait: `M109 [T<index>] S<temperature>`
@@ -271,18 +272,22 @@ The following command is available when a "manual_stepper" config
 section is enabled:
 - `MANUAL_STEPPER STEPPER=config_name [ENABLE=[0|1]]
   [SET_POSITION=<pos>] [SPEED=<speed>] [ACCEL=<accel>]
-  [MOVE=<pos> [STOP_ON_ENDSTOP=[1|2|-1|-2]]`: This command will alter
-  the state of the stepper. Use the ENABLE parameter to enable/disable
-  the stepper. Use the SET_POSITION parameter to force the stepper to
-  think it is at the given position. Use the MOVE parameter to request
-  a movement to the given position. If SPEED and/or ACCEL is specified
-  then the given values will be used instead of the defaults specified
-  in the config file. If an ACCEL of zero is specified then no
-  acceleration will be performed. If STOP_ON_ENDSTOP=1 is specified
-  then the move will end early should the endstop report as triggered
-  (use STOP_ON_ENDSTOP=2 to complete the move without error even if
-  the endstop does not trigger, use -1 or -2 to stop when the endstop
-  reports not triggered).
+  [MOVE=<pos> [STOP_ON_ENDSTOP=[1|2|-1|-2]] [SYNC=0]]`: This command
+  will alter the state of the stepper. Use the ENABLE parameter to
+  enable/disable the stepper. Use the SET_POSITION parameter to force
+  the stepper to think it is at the given position. Use the MOVE
+  parameter to request a movement to the given position. If SPEED
+  and/or ACCEL is specified then the given values will be used instead
+  of the defaults specified in the config file. If an ACCEL of zero is
+  specified then no acceleration will be performed. If
+  STOP_ON_ENDSTOP=1 is specified then the move will end early should
+  the endstop report as triggered (use STOP_ON_ENDSTOP=2 to complete
+  the move without error even if the endstop does not trigger, use -1
+  or -2 to stop when the endstop reports not triggered). Normally
+  future G-Code commands will be scheduled to run after the stepper
+  move completes, however if a manual stepper move uses SYNC=0 then
+  future G-Code movement commands may run in parallel with the stepper
+  movement.
 
 ## Probe
 

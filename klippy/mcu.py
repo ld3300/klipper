@@ -58,7 +58,7 @@ class MCU_endstop:
     def home_start(self, print_time, sample_time, sample_count, rest_time,
                    triggered=True):
         clock = self._mcu.print_time_to_clock(print_time)
-        rest_ticks = int(rest_time * self._mcu.get_adjusted_freq())
+        rest_ticks = self._mcu.print_time_to_clock(print_time+rest_time) - clock
         self._next_query_print_time = print_time + self.RETRY_QUERY
         self._min_query_time = self._reactor.monotonic()
         self._last_sent_time = 0.
@@ -444,6 +444,10 @@ class MCU:
         if params['#name'] == 'is_shutdown':
             prefix = "Previous MCU '%s' shutdown: " % (self._name,)
         self._printer.invoke_async_shutdown(prefix + msg + error_help(msg))
+    def _handle_starting(self, params):
+        if not self._is_shutdown:
+            self._printer.invoke_async_shutdown("MCU '%s' spontaneous restart"
+                                                % (self._name,))
     # Connection phase
     def _check_restart(self, reason):
         start_reason = self._printer.get_start_args().get("start_reason")
@@ -503,15 +507,16 @@ class MCU:
         # Calculate config CRC
         config_crc = zlib.crc32('\n'.join(self._config_cmds)) & 0xffffffff
         self.add_config_cmd("finalize_config crc=%d" % (config_crc,))
+        if prev_crc is not None and config_crc != prev_crc:
+            self._check_restart("CRC mismatch")
+            raise error("MCU '%s' CRC does not match config" % (self._name,))
         # Transmit config messages (if needed)
+        self.register_response(self._handle_starting, 'starting')
         if prev_crc is None:
             logging.info("Sending MCU '%s' printer configuration...",
                          self._name)
             for c in self._config_cmds:
                 self._serial.send(c)
-        elif config_crc != prev_crc:
-            self._check_restart("CRC mismatch")
-            raise error("MCU '%s' CRC does not match config" % (self._name,))
         # Transmit init messages
         for c in self._init_cmds:
             self._serial.send(c)
@@ -661,8 +666,6 @@ class MCU:
         return self._clocksync.clock_to_print_time(clock)
     def estimated_print_time(self, eventtime):
         return self._clocksync.estimated_print_time(eventtime)
-    def get_adjusted_freq(self):
-        return self._clocksync.get_adjusted_freq()
     def clock32_to_clock64(self, clock32):
         return self._clocksync.clock32_to_clock64(clock32)
     # Restarts
