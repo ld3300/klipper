@@ -631,6 +631,7 @@ class GCodeParser:
             return
         kin = self.toolhead.get_kinematics()
         steppers = kin.get_steppers()
+        status = kin.get_status()
         mcu_pos = " ".join(["%s:%d" % (s.get_name(), s.get_mcu_position())
                             for s in steppers])
         for s in steppers:
@@ -647,15 +648,18 @@ class GCodeParser:
                              for a, v in zip("XYZE", self.base_position)])
         homing_pos = " ".join(["%s:%.6f"  % (a, v)
                                for a, v in zip("XYZ", self.homing_position)])
+        homed_state = " ".join(["%s:%s" % (a, v)
+                             for a, v in zip("XYZ", status)])
         self.respond_info("mcu: %s\n"
                           "stepper: %s\n"
                           "kinematic: %s\n"
                           "toolhead: %s\n"
                           "gcode: %s\n"
                           "gcode base: %s\n"
-                          "gcode homing: %s"
+                          "gcode homing: %s\n"
+                          "Home Status: %s"
                           % (mcu_pos, stepper_pos, kin_pos, toolhead_pos,
-                             gcode_pos, base_pos, homing_pos))
+                             gcode_pos, base_pos, homing_pos, homed_state))
     def request_restart(self, result):
         if self.is_printer_ready:
             print_time = self.toolhead.get_last_move_time()
